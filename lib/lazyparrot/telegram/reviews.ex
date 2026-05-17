@@ -3,8 +3,12 @@ defmodule Lazyparrot.Telegram.Reviews do
 
   alias Lazyparrot.Cards
   alias Lazyparrot.Telegram
+  alias Lazyparrot.Users
+  alias Lazyparrot.Workers.ReviewReminder
 
   def start(user) do
+    ReviewReminder.schedule_reminder(user.id)
+
     case Cards.next_due(user.id) do
       nil ->
         if Cards.count(user.id) > 0 do
@@ -182,6 +186,58 @@ defmodule Lazyparrot.Telegram.Reviews do
         callback_data: "del:#{Jason.encode!(%{"id" => card_id, "p" => placement})}"
       }
     ]
+  end
+
+  def send_review_reminder(user_id, opts \\ []) do
+    message_id = Keyword.get(opts, :message_id)
+    user = Users.get!(user_id)
+
+    count = Cards.count_due(user_id)
+
+    if message_id do
+      Telegram.delete_message(user.telegram_id, message_id)
+    end
+
+    if count == 0 do
+      {:ok, :no_cards_to_review}
+    else
+      text =
+        ngettext(
+          "You have <b>%{count}</b> card waiting for review!",
+          "You have <b>%{count}</b> cards waiting for review!",
+          count,
+          count: count
+        )
+
+      case Telegram.send_message(user.telegram_id, text,
+             reply_markup: %{
+               inline_keyboard: [
+                 [%{text: "📖 " <> pgettext("button", "Review"), callback_data: "start_review"}],
+                 [
+                   %{
+                     text: "✋ " <> pgettext("button", "Pause reminders"),
+                     callback_data: "pause_reminders"
+                   }
+                 ]
+               ]
+             }
+           ) do
+        {:ok, %{"message_id" => new_message_id}} ->
+          {:ok, new_message_id}
+
+        _ ->
+          {:error, :could_not_send_message}
+      end
+    end
+  end
+
+  def pause_reminders(user) do
+    ReviewReminder.pause_reminders(user.id)
+
+    Telegram.send_message(
+      user.telegram_id,
+      gettext("Reminders paused. Start a /review when you're ready!")
+    )
   end
 
   defp rating_button(card_id, rating, label) do

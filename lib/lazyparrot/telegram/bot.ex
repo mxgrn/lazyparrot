@@ -68,6 +68,14 @@ defmodule Lazyparrot.Telegram.Bot do
     Reviews.handle_delete_cancel(user, payload["id"], payload["p"], message_id)
   end
 
+  defp handle_callback(user, "start_review", _payload, _message_id) do
+    Reviews.start(user)
+  end
+
+  defp handle_callback(user, "pause_reminders", _payload, _message_id) do
+    Reviews.pause_reminders(user)
+  end
+
   defp handle_callback(_user, _method, _payload, _message_id), do: :ok
 
   defp parse_callback_data(data) do

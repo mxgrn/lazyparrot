@@ -68,7 +68,8 @@ defmodule Lazyparrot.MixProject do
       {:bandit, "~> 1.5"},
       {:ex_fsrs, "~> 0.1.0", git: "https://github.com/open-spaced-repetition/ex_fsrs"},
       {:req_llm, "~> 1.0"},
-      {:gramex, github: "mxgrn/gramex", branch: "main"}
+      {:gramex, github: "mxgrn/gramex", branch: "main"},
+      {:oban, "~> 2.19"}
     ]
   end
 

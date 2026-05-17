@@ -15,6 +15,10 @@ defmodule Lazyparrot.Telegram do
     request("editMessageText", params)
   end
 
+  def delete_message(chat_id, message_id) do
+    request("deleteMessage", %{chat_id: chat_id, message_id: message_id})
+  end
+
   defp token do
     Application.get_env(:lazyparrot, :telegram_bot)[:token]
   end

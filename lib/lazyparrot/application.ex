@@ -10,11 +10,9 @@ defmodule Lazyparrot.Application do
     children = [
       LazyparrotWeb.Telemetry,
       Lazyparrot.Repo,
+      {Oban, Application.fetch_env!(:lazyparrot, Oban)},
       {DNSCluster, query: Application.get_env(:lazyparrot, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Lazyparrot.PubSub},
-      # Start a worker by calling: Lazyparrot.Worker.start_link(arg)
-      # {Lazyparrot.Worker, arg},
-      # Start to serve requests, typically the last entry
       LazyparrotWeb.Endpoint
     ]
 

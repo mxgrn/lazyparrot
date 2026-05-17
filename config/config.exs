@@ -14,6 +14,12 @@ config :lazyparrot,
 config :lazyparrot, :telegram_bot, token: "test-token"
 config :lazyparrot, :llm, model: "google:gemini-3.1-flash-lite-preview"
 
+config :lazyparrot, Oban,
+  engine: Oban.Engines.Basic,
+  notifier: Oban.Notifiers.Postgres,
+  queues: [default: 10],
+  repo: Lazyparrot.Repo
+
 # Configure the endpoint
 config :lazyparrot, LazyparrotWeb.Endpoint,
   url: [host: "localhost"],
