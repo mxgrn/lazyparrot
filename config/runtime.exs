@@ -23,6 +23,14 @@ end
 config :lazyparrot, LazyparrotWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
+if telegram_token = System.get_env("TELEGRAM_BOT_TOKEN") do
+  config :lazyparrot, :telegram_bot, token: telegram_token
+end
+
+if google_api_key = System.get_env("GOOGLE_API_KEY") do
+  config :req_llm, :google_api_key, google_api_key
+end
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||

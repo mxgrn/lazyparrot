@@ -65,7 +65,10 @@ defmodule Lazyparrot.MixProject do
       {:gettext, "~> 1.0"},
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.2.0"},
-      {:bandit, "~> 1.5"}
+      {:bandit, "~> 1.5"},
+      {:ex_fsrs, "~> 0.1.0", git: "https://github.com/open-spaced-repetition/ex_fsrs"},
+      {:req_llm, "~> 1.0"},
+      {:gramex, github: "mxgrn/gramex", branch: "main"}
     ]
   end
 

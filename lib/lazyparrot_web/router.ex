@@ -14,16 +14,30 @@ defmodule LazyparrotWeb.Router do
     plug :accepts, ["json"]
   end
 
+  pipeline :telegram do
+    plug :accepts, ["json"]
+    plug Gramex.UserDataPlug, halt_if_nil: true
+    plug Gramex.UserDataPersistencePlug, repo: Lazyparrot.Repo, schema: Lazyparrot.Users.User
+    plug LazyparrotWeb.Plugs.TelegramLocalePlug
+  end
+
   scope "/", LazyparrotWeb do
     pipe_through :browser
 
     get "/", PageController, :home
   end
 
-  # Other scopes may use custom stacks.
-  # scope "/api", LazyparrotWeb do
-  #   pipe_through :api
-  # end
+  scope "/", LazyparrotWeb do
+    pipe_through :api
+
+    get "/health", HealthController, :index
+  end
+
+  scope "/telegram", LazyparrotWeb do
+    pipe_through :telegram
+
+    post "/", TelegramController, :webhook
+  end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:lazyparrot, :dev_routes) do
