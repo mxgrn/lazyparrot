@@ -44,13 +44,13 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Pull image on host, restart, run migrations
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1
         with:
           host: "49.12.187.176,5.75.226.35"
           username: ${{matrix.username}}
           key: ${{ secrets.DEPLOYMENT_KEY }}
-          script_stop: true
           script: |
+            set -e
             echo "${{secrets.GITHUB_TOKEN}}" | docker login https://ghcr.io -u ${{github.actor}} --password-stdin
             docker pull ghcr.io/mxgrn/${{matrix.app}}_${{matrix.env}}
             docker stop ${{matrix.app}}_${{matrix.env}} || true
