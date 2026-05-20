@@ -1,10 +1,14 @@
 defmodule Lazyparrot.Telegram.Bot do
   use Gettext, backend: Lazyparrot.LlmGettext
 
+  alias Lazyparrot.Cards
   alias Lazyparrot.Telegram
+  alias Lazyparrot.Telegram.BotInfo
   alias Lazyparrot.Telegram.Flows.CardCreation
   alias Lazyparrot.Telegram.Reviews
   alias Lazyparrot.Users
+
+  require BotInfo
 
   def handle_update(nil, _params), do: :ok
 
@@ -33,6 +37,37 @@ defmodule Lazyparrot.Telegram.Bot do
       user.telegram_id,
       gettext("You have no flashcards yet. Send me a word or phrase you'd like to learn, so we could make a flashcard!")
     )
+  end
+
+  defp handle_command(user, "help" <> _) do
+    text =
+      gettext("""
+      <b>How to add new flashcards</b>
+
+      Send me a word or phrase you want to learn, and I'll suggest a flashcard for it.
+
+      <b>How to review flashcards</b>
+
+      Use /review to start. I'll show you the question — try to remember the answer, then rate how well you recalled it.
+
+      <b>Available commands</b>
+      """) <> gettext(BotInfo.commands())
+
+    Telegram.send_message(user.telegram_id, text)
+  end
+
+  defp handle_command(user, "stats" <> _) do
+    total = Cards.count(user.id)
+    due = Cards.count_due(user.id)
+
+    text =
+      gettext("📊 <b>Your stats</b>") <>
+        "\n\n" <>
+        gettext("Total cards: %{total}", total: total) <>
+        "\n" <>
+        gettext("Due for review: %{due}", due: due)
+
+    Telegram.send_message(user.telegram_id, text)
   end
 
   defp handle_command(_user, _), do: :ok
