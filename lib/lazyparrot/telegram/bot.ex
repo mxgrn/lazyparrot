@@ -103,6 +103,22 @@ defmodule Lazyparrot.Telegram.Bot do
     Reviews.handle_delete_cancel(user, payload["id"], payload["p"], message_id)
   end
 
+  defp handle_callback(user, "crev", card_id, message_id) do
+    CardCreation.handle_reverse(user, card_id, message_id)
+  end
+
+  defp handle_callback(user, "cdel", card_id, message_id) do
+    CardCreation.handle_delete(user, card_id, message_id)
+  end
+
+  defp handle_callback(user, "cdel_y", card_id, message_id) do
+    CardCreation.handle_delete_confirm(user, card_id, message_id)
+  end
+
+  defp handle_callback(user, "cdel_n", card_id, message_id) do
+    CardCreation.handle_delete_cancel(user, card_id, message_id)
+  end
+
   defp handle_callback(user, "start_review", _payload, _message_id) do
     Reviews.start(user)
   end

@@ -65,6 +65,11 @@ defmodule Lazyparrot.Cards do
     |> Repo.update!()
   end
 
+  def reverse_exists?(user_id, front, back) do
+    from(c in Card, where: c.user_id == ^user_id and c.front == ^back and c.back == ^front)
+    |> Repo.exists?()
+  end
+
   def delete!(%Card{} = card) do
     Repo.delete!(card)
   end
