@@ -26,7 +26,11 @@ defmodule Lazyparrot.Telegram.Flows.CardCreation do
   def handle_reverse(user, card_id, message_id) do
     case Cards.get_for_user(card_id, user.id) do
       nil ->
-        Telegram.edit_message(user.telegram_id, message_id, gettext("This card no longer exists."))
+        Telegram.edit_message(
+          user.telegram_id,
+          message_id,
+          gettext("This card no longer exists.")
+        )
 
       card ->
         {:ok, reverse} = Cards.create(user, %{front: card.back, back: card.front})
@@ -43,7 +47,11 @@ defmodule Lazyparrot.Telegram.Flows.CardCreation do
   def handle_delete(user, card_id, message_id) do
     case Cards.get_for_user(card_id, user.id) do
       nil ->
-        Telegram.edit_message(user.telegram_id, message_id, gettext("This card was already deleted."))
+        Telegram.edit_message(
+          user.telegram_id,
+          message_id,
+          gettext("This card was already deleted.")
+        )
 
       card ->
         Telegram.edit_message(
@@ -71,7 +79,11 @@ defmodule Lazyparrot.Telegram.Flows.CardCreation do
   def handle_delete_confirm(user, card_id, message_id) do
     case Cards.get_for_user(card_id, user.id) do
       nil ->
-        Telegram.edit_message(user.telegram_id, message_id, gettext("This card was already deleted."))
+        Telegram.edit_message(
+          user.telegram_id,
+          message_id,
+          gettext("This card was already deleted.")
+        )
 
       card ->
         Cards.delete!(card)
@@ -82,7 +94,11 @@ defmodule Lazyparrot.Telegram.Flows.CardCreation do
   def handle_delete_cancel(user, card_id, message_id) do
     case Cards.get_for_user(card_id, user.id) do
       nil ->
-        Telegram.edit_message(user.telegram_id, message_id, gettext("This card was already deleted."))
+        Telegram.edit_message(
+          user.telegram_id,
+          message_id,
+          gettext("This card was already deleted.")
+        )
 
       card ->
         Telegram.edit_message(

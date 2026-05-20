@@ -21,7 +21,17 @@ defmodule Lazyparrot.Cards.Card do
 
   def changeset(card, attrs) do
     card
-    |> cast(attrs, [:front, :back, :user_id, :state, :step, :stability, :difficulty, :due, :last_review])
+    |> cast(attrs, [
+      :front,
+      :back,
+      :user_id,
+      :state,
+      :step,
+      :stability,
+      :difficulty,
+      :due,
+      :last_review
+    ])
     |> validate_required([:front, :back, :user_id, :due])
   end
 

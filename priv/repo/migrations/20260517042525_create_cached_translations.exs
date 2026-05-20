@@ -15,9 +15,10 @@ defmodule Lazyparrot.Repo.Migrations.CreateCachedTranslations do
     end
 
     execute """
-    ALTER TABLE cached_translations
-    ADD COLUMN key_hash bytea GENERATED ALWAYS AS (digest(key, 'sha256')) STORED
-    """, ""
+            ALTER TABLE cached_translations
+            ADD COLUMN key_hash bytea GENERATED ALWAYS AS (digest(key, 'sha256')) STORED
+            """,
+            ""
 
     create unique_index(:cached_translations, [:locale, :key_hash, :context, :domain])
   end

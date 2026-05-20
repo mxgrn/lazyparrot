@@ -12,7 +12,9 @@ defmodule Lazyparrot.Telegram.Bot do
 
   def handle_update(nil, _params), do: :ok
 
-  def handle_update(user, %{"callback_query" => %{"data" => data, "message" => %{"message_id" => message_id}}}) do
+  def handle_update(user, %{
+        "callback_query" => %{"data" => data, "message" => %{"message_id" => message_id}}
+      }) do
     {method, payload} = parse_callback_data(data)
     handle_callback(user, method, payload, message_id)
   end
@@ -35,7 +37,9 @@ defmodule Lazyparrot.Telegram.Bot do
   defp handle_command(user, "start" <> _) do
     Telegram.send_message(
       user.telegram_id,
-      gettext("You have no flashcards yet. Send me a word or phrase you'd like to learn, so we could make a flashcard!")
+      gettext(
+        "You have no flashcards yet. Send me a word or phrase you'd like to learn, so we could make a flashcard!"
+      )
     )
   end
 

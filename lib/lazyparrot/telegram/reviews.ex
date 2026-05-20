@@ -19,7 +19,9 @@ defmodule Lazyparrot.Telegram.Reviews do
         else
           Telegram.send_message(
             user.telegram_id,
-            gettext("You have no flashcards yet. Send me a word or phrase you'd like to learn, so we could make a flashcard!")
+            gettext(
+              "You have no flashcards yet. Send me a word or phrase you'd like to learn, so we could make a flashcard!"
+            )
           )
         end
 
@@ -33,7 +35,11 @@ defmodule Lazyparrot.Telegram.Reviews do
 
     case Cards.get_for_user(card_id, user.id) do
       nil ->
-        Telegram.edit_message(user.telegram_id, message_id, gettext("This card no longer exists."))
+        Telegram.edit_message(
+          user.telegram_id,
+          message_id,
+          gettext("This card no longer exists.")
+        )
 
       card ->
         hint = "\n\n💁 " <> gettext("How easy was it to recall the answer?")
@@ -96,8 +102,13 @@ defmodule Lazyparrot.Telegram.Reviews do
 
       _card ->
         case placement do
-          "q" -> send_question_edit(user, Cards.get_for_user(card_id, user.id), message_id, confirm_delete: true)
-          "a" -> show_answer(user, card_id, message_id, confirm_delete: true)
+          "q" ->
+            send_question_edit(user, Cards.get_for_user(card_id, user.id), message_id,
+              confirm_delete: true
+            )
+
+          "a" ->
+            show_answer(user, card_id, message_id, confirm_delete: true)
         end
     end
   end
