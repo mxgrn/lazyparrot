@@ -41,6 +41,21 @@ defmodule Lazyparrot.Cards do
     |> Repo.aggregate(:count)
   end
 
+  def count_due_by_type(user_id) do
+    now = DateTime.utc_now()
+
+    from(c in Card,
+      where: c.user_id == ^user_id and c.due <= ^now,
+      select: %{
+        to_review:
+          count(fragment("CASE WHEN ? IS NOT NULL THEN 1 END", c.last_review)),
+        new:
+          count(fragment("CASE WHEN ? IS NULL THEN 1 END", c.last_review))
+      }
+    )
+    |> Repo.one()
+  end
+
   def count(user_id) do
     from(c in Card, where: c.user_id == ^user_id)
     |> Repo.aggregate(:count)

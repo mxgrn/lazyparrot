@@ -143,29 +143,37 @@ defmodule Lazyparrot.Telegram.Reviews do
   end
 
   defp send_question(user, card) do
-    count = Cards.count_due(user.id)
+    %{to_review: to_review, new: new} = Cards.count_due_by_type(user.id)
 
     Telegram.send_message(
       user.telegram_id,
-      question_text(card, count),
+      question_text(card, to_review, new),
       reply_markup: question_markup(card.id)
     )
   end
 
   defp send_question_edit(user, card, message_id, opts \\ []) do
     confirm_delete = Keyword.get(opts, :confirm_delete, false)
-    count = Cards.count_due(user.id)
+    %{to_review: to_review, new: new} = Cards.count_due_by_type(user.id)
 
     Telegram.edit_message(
       user.telegram_id,
       message_id,
-      question_text(card, count),
+      question_text(card, to_review, new),
       reply_markup: question_markup(card.id, confirm_delete)
     )
   end
 
-  defp question_text(card, count) do
-    "<b>#{card.front}</b>\n\n<i>#{gettext("Cards left: %{count}", count: count)}</i>"
+  defp question_text(card, to_review, new) do
+    "<i>#{review_summary(to_review, new)}</i>\n\n<b>#{card.front}</b>"
+  end
+
+  defp review_summary(0, new) do
+    gettext("🌱 New cards to start learning: %{count}", count: new)
+  end
+
+  defp review_summary(to_review, _new) do
+    gettext("Active cards to review: %{count}", count: to_review)
   end
 
   defp question_markup(card_id, confirm_delete \\ false) do
