@@ -61,15 +61,24 @@ defmodule Lazyparrot.Telegram.Bot do
   end
 
   defp handle_command(user, "stats" <> _) do
-    total = Cards.count(user.id)
+    %{mature: mature, active: active, new: new} = Cards.count_by_status(user.id)
     due = Cards.count_due(user.id)
 
     text =
-      gettext("📊 <b>Your stats</b>") <>
-        "\n\n" <>
-        gettext("Total cards: %{total}", total: total) <>
-        "\n" <>
-        gettext("Due for review: %{due}", due: due)
+      gettext(
+        """
+        📊 <b>Your stats</b>
+
+        ✅ Mature: %{mature}
+        ⏰ Active: %{active}
+        🌱 New: %{new}
+        📬 Due for review: %{due}\
+        """,
+        mature: mature,
+        active: active,
+        new: new,
+        due: due
+      )
 
     Telegram.send_message(user.telegram_id, text)
   end

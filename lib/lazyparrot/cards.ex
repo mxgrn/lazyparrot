@@ -46,6 +46,34 @@ defmodule Lazyparrot.Cards do
     |> Repo.aggregate(:count)
   end
 
+  def count_by_status(user_id) do
+    from(c in Card,
+      where: c.user_id == ^user_id,
+      select: %{
+        mature:
+          count(
+            fragment(
+              "CASE WHEN ? IS NOT NULL AND ? >= ? + interval '30 days' THEN 1 END",
+              c.last_review,
+              c.due,
+              c.last_review
+            )
+          ),
+        active:
+          count(
+            fragment(
+              "CASE WHEN ? IS NOT NULL AND ? < ? + interval '30 days' THEN 1 END",
+              c.last_review,
+              c.due,
+              c.last_review
+            )
+          ),
+        new: count(fragment("CASE WHEN ? IS NULL THEN 1 END", c.last_review))
+      }
+    )
+    |> Repo.one()
+  end
+
   def get_for_user(card_id, user_id) do
     from(c in Card, where: c.id == ^card_id and c.user_id == ^user_id)
     |> Repo.one()
