@@ -37,7 +37,9 @@ defmodule Lazyparrot.Cards do
   def count_due(user_id) do
     now = DateTime.utc_now()
 
-    from(c in Card, where: c.user_id == ^user_id and c.due <= ^now)
+    from(c in Card,
+      where: c.user_id == ^user_id and c.due <= ^now and not is_nil(c.last_review)
+    )
     |> Repo.aggregate(:count)
   end
 
