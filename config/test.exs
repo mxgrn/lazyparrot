@@ -28,6 +28,9 @@ config :swoosh, :api_client, false
 
 config :lazyparrot, Oban, testing: :manual
 
+# Use the mock Telegram API in tests so bot interactions can be exercised end-to-end
+config :gramex, adapter: Gramex.ApiMock, endpoint: LazyparrotWeb.Endpoint
+
 # Print only warnings and errors during test
 config :logger, level: :warning
 

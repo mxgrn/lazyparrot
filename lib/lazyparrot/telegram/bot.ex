@@ -132,6 +132,10 @@ defmodule Lazyparrot.Telegram.Bot do
     CardCreation.handle_delete_cancel(user, card_id, message_id)
   end
 
+  defp handle_callback(user, "ccancel", _payload, message_id) do
+    CardCreation.handle_cancel(user, message_id)
+  end
+
   defp handle_callback(user, "start_review", _payload, _message_id) do
     Reviews.start(user)
   end

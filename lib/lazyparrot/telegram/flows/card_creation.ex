@@ -7,7 +7,29 @@ defmodule Lazyparrot.Telegram.Flows.CardCreation do
 
   def start(user, front_text) do
     Users.update_flow!(user, __MODULE__, %{"front" => front_text})
-    Telegram.send_message(user.telegram_id, gettext("Got it! Now send me the back of the card."))
+
+    Telegram.send_message(
+      user.telegram_id,
+      gettext("Got it! Now send me the back of the card."),
+      reply_markup: %{
+        inline_keyboard: [
+          [
+            %{
+              text: "❌ " <> pgettext("button", "Cancel"),
+              callback_data: "ccancel"
+            }
+          ]
+        ]
+      }
+    )
+  end
+
+  def handle_cancel(user, message_id) do
+    if user.current_flow == to_string(__MODULE__) do
+      Users.reset_flow!(user)
+    end
+
+    Telegram.edit_message(user.telegram_id, message_id, gettext("Card creation cancelled."))
   end
 
   def handle_message(user, back_text) do
