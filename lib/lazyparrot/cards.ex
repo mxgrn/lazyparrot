@@ -28,7 +28,11 @@ defmodule Lazyparrot.Cards do
 
     from(c in Card,
       where: c.user_id == ^user_id and c.due <= ^now,
-      order_by: [desc: fragment("? IS NOT NULL", c.last_review), asc: c.due],
+      order_by: [
+        desc: fragment("? IS NOT NULL", c.last_review),
+        asc: fragment("CASE WHEN ? IS NOT NULL THEN ? END", c.last_review, c.due),
+        desc: c.id
+      ],
       limit: 1
     )
     |> Repo.one()
