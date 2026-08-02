@@ -53,10 +53,8 @@ defmodule Lazyparrot.Cards do
     from(c in Card,
       where: c.user_id == ^user_id and c.due <= ^now,
       select: %{
-        to_review:
-          count(fragment("CASE WHEN ? IS NOT NULL THEN 1 END", c.last_review)),
-        new:
-          count(fragment("CASE WHEN ? IS NULL THEN 1 END", c.last_review))
+        to_review: count(fragment("CASE WHEN ? IS NOT NULL THEN 1 END", c.last_review)),
+        new: count(fragment("CASE WHEN ? IS NULL THEN 1 END", c.last_review))
       }
     )
     |> Repo.one()
@@ -95,8 +93,20 @@ defmodule Lazyparrot.Cards do
     |> Repo.one()
   end
 
+  def get(card_id) do
+    Repo.get(Card, card_id)
+  end
+
   def get_for_user(card_id, user_id) do
     from(c in Card, where: c.id == ^card_id and c.user_id == ^user_id)
+    |> Repo.one()
+  end
+
+  def get_by_front_back(user_id, front, back) do
+    from(c in Card,
+      where: c.user_id == ^user_id and c.front == ^front and c.back == ^back,
+      limit: 1
+    )
     |> Repo.one()
   end
 

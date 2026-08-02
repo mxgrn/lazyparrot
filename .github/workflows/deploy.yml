@@ -63,6 +63,7 @@ jobs:
               -e DATABASE_URL=${{secrets.DATABASE_URL}} \
               -e GITHUB_SHA=${{github.sha}} \
               -e TELEGRAM_BOT_TOKEN=${{secrets.TELEGRAM_BOT_TOKEN}} \
+              -e TELEGRAM_BOT_USERNAME=lazyparrotbot \
               -e GOOGLE_API_KEY=${{secrets.GOOGLE_API_KEY}} \
               -e PROD_ENV=${{matrix.env}} \
               -e HOSTNAME=`hostname` \

@@ -11,7 +11,7 @@ config :lazyparrot,
   ecto_repos: [Lazyparrot.Repo],
   generators: [timestamp_type: :utc_datetime]
 
-config :lazyparrot, :telegram_bot, token: "test-token"
+config :lazyparrot, :telegram_bot, token: "test-token", username: "test_bot"
 config :lazyparrot, :llm, model: "google:gemini-3.1-flash-lite-preview"
 
 config :lazyparrot, Oban,

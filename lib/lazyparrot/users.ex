@@ -19,6 +19,11 @@ defmodule Lazyparrot.Users do
     Repo.get_by!(User, telegram_id: telegram_id)
   end
 
+  def increment_share_claims_count(user_id) do
+    from(u in User, where: u.id == ^user_id)
+    |> Repo.update_all(inc: [share_claims_count: 1])
+  end
+
   def update_flow!(user, module, args) do
     user
     |> User.changeset(%{

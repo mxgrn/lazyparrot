@@ -27,6 +27,10 @@ if telegram_token = System.get_env("TELEGRAM_BOT_TOKEN") do
   config :lazyparrot, :telegram_bot, token: telegram_token
 end
 
+if bot_username = System.get_env("TELEGRAM_BOT_USERNAME") do
+  config :lazyparrot, :telegram_bot, username: bot_username
+end
+
 if google_api_key = System.get_env("GOOGLE_API_KEY") do
   config :req_llm, :google_api_key, google_api_key
 end

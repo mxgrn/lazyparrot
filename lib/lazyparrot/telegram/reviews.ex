@@ -3,6 +3,7 @@ defmodule Lazyparrot.Telegram.Reviews do
 
   alias Lazyparrot.Cards
   alias Lazyparrot.Telegram
+  alias Lazyparrot.Telegram.CardSharing
   alias Lazyparrot.Users
   alias Lazyparrot.Workers.ReviewReminder
 
@@ -54,6 +55,7 @@ defmodule Lazyparrot.Telegram.Reviews do
               [rating_button(card.id, "hard", "😅 " <> pgettext("button", "Hard"))],
               [rating_button(card.id, "good", "😀 " <> pgettext("button", "Fine"))],
               [rating_button(card.id, "easy", "😎 " <> pgettext("button", "Easy"))],
+              [CardSharing.share_button(card)],
               delete_buttons(card.id, "a", confirm_delete)
             ]
           }

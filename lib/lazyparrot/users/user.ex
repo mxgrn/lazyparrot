@@ -11,6 +11,7 @@ defmodule Lazyparrot.Users.User do
     field :telegram_is_premium, :boolean
     field :current_flow, :string
     field :current_flow_args, :map, default: %{}
+    field :share_claims_count, :integer, default: 0
 
     has_many :cards, Lazyparrot.Cards.Card
 

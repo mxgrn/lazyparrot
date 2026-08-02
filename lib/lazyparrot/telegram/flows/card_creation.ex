@@ -3,6 +3,7 @@ defmodule Lazyparrot.Telegram.Flows.CardCreation do
 
   alias Lazyparrot.Cards
   alias Lazyparrot.Telegram
+  alias Lazyparrot.Telegram.CardSharing
   alias Lazyparrot.Users
 
   def start(user, front_text) do
@@ -38,9 +39,13 @@ defmodule Lazyparrot.Telegram.Flows.CardCreation do
 
     Users.reset_flow!(user)
 
+    send_card_saved(user, card)
+  end
+
+  def send_card_saved(user, card) do
     Telegram.send_message(
       user.telegram_id,
-      card_saved_text(front, back_text),
+      card_saved_text(card.front, card.back),
       reply_markup: card_saved_markup(card, user.id)
     )
   end
@@ -151,7 +156,9 @@ defmodule Lazyparrot.Telegram.Flows.CardCreation do
         ]
       end
 
-    %{inline_keyboard: reverse_row ++ [[delete_button(card.id)]]}
+    %{
+      inline_keyboard: reverse_row ++ [[CardSharing.share_button(card)], [delete_button(card.id)]]
+    }
   end
 
   defp delete_button(card_id) do

@@ -4,6 +4,7 @@ defmodule Lazyparrot.Telegram.Bot do
   alias Lazyparrot.Cards
   alias Lazyparrot.Telegram
   alias Lazyparrot.Telegram.BotInfo
+  alias Lazyparrot.Telegram.CardSharing
   alias Lazyparrot.Telegram.Flows.CardCreation
   alias Lazyparrot.Telegram.Reviews
   alias Lazyparrot.Users
@@ -34,13 +35,15 @@ defmodule Lazyparrot.Telegram.Bot do
     Reviews.start(user)
   end
 
+  defp handle_command(user, "start learn_" <> card_id) do
+    case CardSharing.claim(user, card_id) do
+      {:ok, _card} -> :ok
+      _ -> send_welcome(user)
+    end
+  end
+
   defp handle_command(user, "start" <> _) do
-    Telegram.send_message(
-      user.telegram_id,
-      gettext(
-        "You have no flashcards yet. Send me a word or phrase you'd like to learn, so we could make a flashcard!"
-      )
-    )
+    send_welcome(user)
   end
 
   defp handle_command(user, "help" <> _) do
@@ -84,6 +87,15 @@ defmodule Lazyparrot.Telegram.Bot do
   end
 
   defp handle_command(_user, _), do: :ok
+
+  defp send_welcome(user) do
+    Telegram.send_message(
+      user.telegram_id,
+      gettext(
+        "You have no flashcards yet. Send me a word or phrase you'd like to learn, so we could make a flashcard!"
+      )
+    )
+  end
 
   defp handle_text(user, text) do
     case user.current_flow do
