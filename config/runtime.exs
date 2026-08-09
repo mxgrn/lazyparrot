@@ -80,6 +80,19 @@ if config_env() == :prod do
     ],
     secret_key_base: secret_key_base
 
+  config :sentry,
+    dsn: System.get_env("SENTRY_DSN"),
+    environment_name: System.get_env("PROD_ENV"),
+    release: System.get_env("GITHUB_SHA"),
+    integrations: [
+      oban: [
+        # Capture errors:
+        capture_errors: true,
+        # Monitor cron jobs:
+        cron: [enabled: true]
+      ]
+    ]
+
   # ## SSL Support
   #
   # To get SSL working, you will need to add the `https` key

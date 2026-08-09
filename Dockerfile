@@ -55,6 +55,9 @@ COPY lib lib
 # Compile the release
 RUN mix compile
 
+# Package source code for Sentry's source context reporting
+RUN mix sentry.package_source_code
+
 COPY assets assets
 
 # compile assets

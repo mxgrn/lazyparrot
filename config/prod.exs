@@ -20,6 +20,12 @@ config :lazyparrot, LazyparrotWeb.Endpoint,
     ]
   ]
 
+# Source-context options must be set at compile time so that
+# `mix sentry.package_source_code` (run during the Docker build) sees them.
+config :sentry,
+  enable_source_code_context: true,
+  root_source_code_paths: [File.cwd!()]
+
 # Configure Swoosh API Client
 config :swoosh, api_client: Swoosh.ApiClient.Req
 

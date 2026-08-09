@@ -65,6 +65,7 @@ jobs:
               -e TELEGRAM_BOT_TOKEN=${{secrets.TELEGRAM_BOT_TOKEN}} \
               -e TELEGRAM_BOT_USERNAME=lazyparrotbot \
               -e GOOGLE_API_KEY=${{secrets.GOOGLE_API_KEY}} \
+              -e SENTRY_DSN=${{secrets.SENTRY_DSN}} \
               -e PROD_ENV=${{matrix.env}} \
               -e HOSTNAME=`hostname` \
               -e PHX_HOST=lazyparrot.mxgrn.com \
