@@ -80,6 +80,8 @@ if config_env() == :prod do
     ],
     secret_key_base: secret_key_base
 
+  config :lazyparrot, :telegram_bot, base_url: "https://botpresto.com/proxy/outbound"
+
   config :sentry,
     dsn: System.get_env("SENTRY_DSN"),
     environment_name: System.get_env("PROD_ENV"),

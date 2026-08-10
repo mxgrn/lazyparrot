@@ -1,6 +1,6 @@
 defmodule Lazyparrot.Telegram do
   def request(method, params) do
-    Gramex.Api.request(token(), method, params)
+    Gramex.Api.request(token(), method, params, base_url: Application.get_env(:lazyparrot, :telegram_bot)[:base_url] || "https://api.telegram.org")
   end
 
   def send_message(chat_id, text, opts \\ []) do
