@@ -35,6 +35,17 @@ defmodule Lazyparrot.Telegram do
     request("deleteMessage", %{chat_id: chat_id, message_id: message_id})
   end
 
+  @doc """
+  Escapes user-provided text for interpolation into `parse_mode: "HTML"`
+  messages, so stray `<`, `>`, or `&` don't make Telegram reject the request.
+  """
+  def escape(text) do
+    text
+    |> String.replace("&", "&amp;")
+    |> String.replace("<", "&lt;")
+    |> String.replace(">", "&gt;")
+  end
+
   defp token do
     Application.get_env(:lazyparrot, :telegram_bot)[:token]
   end

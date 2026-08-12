@@ -48,7 +48,7 @@ defmodule Lazyparrot.Telegram.Reviews do
         Telegram.edit_message(
           user.telegram_id,
           message_id,
-          "<b>#{card.front}</b>\n\n#{card.back}" <> hint,
+          "<b>#{Telegram.escape(card.front)}</b>\n\n#{Telegram.escape(card.back)}" <> hint,
           reply_markup: %{
             inline_keyboard: [
               [rating_button(card.id, "again", "👎 " <> pgettext("button", "Could not recall"))],
@@ -167,7 +167,7 @@ defmodule Lazyparrot.Telegram.Reviews do
   end
 
   defp question_text(card, to_review, new) do
-    "<i>#{review_summary(to_review, new)}</i>\n\n<b>#{card.front}</b>"
+    "<i>#{review_summary(to_review, new)}</i>\n\n<b>#{Telegram.escape(card.front)}</b>"
   end
 
   defp review_summary(0, new) do

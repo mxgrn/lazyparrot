@@ -138,7 +138,7 @@ defmodule Lazyparrot.Telegram.Flows.CardCreation do
   end
 
   defp card_saved_text(front, back) do
-    gettext("Card saved!") <> "\n\n<b>#{front}</b>\n#{back}"
+    gettext("Card saved!") <> "\n\n<b>#{Telegram.escape(front)}</b>\n#{Telegram.escape(back)}"
   end
 
   defp card_saved_markup(card, user_id) do

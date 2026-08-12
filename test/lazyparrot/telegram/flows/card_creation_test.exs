@@ -19,4 +19,14 @@ defmodule Lazyparrot.Telegram.Flows.CardCreationTest do
     assert user.current_flow == nil
     assert Cards.count_by_status(user.id) == %{mature: 0, active: 0, new: 0}
   end
+
+  test "escapes HTML-unsafe characters in card text" do
+    telegram_user(id: @telegram_id)
+    |> start_session()
+    |> send_message("<viel> & Spaß")
+    |> send_message("a lot > of fun")
+    |> assert_text("Card saved!")
+    |> assert_text("<b>&lt;viel&gt; &amp; Spaß</b>")
+    |> assert_text("a lot &gt; of fun")
+  end
 end

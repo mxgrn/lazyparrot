@@ -60,4 +60,8 @@ defmodule Lazyparrot.TelegramTest do
 
     assert Telegram.send_message(123, "hi") == {:ok, %{"message_id" => 1}}
   end
+
+  test "escape/1 escapes HTML special characters without double-escaping" do
+    assert Telegram.escape("a < b & c > d") == "a &lt; b &amp; c &gt; d"
+  end
 end
