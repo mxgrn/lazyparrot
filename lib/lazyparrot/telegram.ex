@@ -1,6 +1,12 @@
 defmodule Lazyparrot.Telegram do
+  require Logger
+
   def request(method, params) do
-    Gramex.Api.request(token(), method, params, base_url: Application.get_env(:lazyparrot, :telegram_bot)[:base_url] || "https://api.telegram.org")
+    token()
+    |> Gramex.Api.request(method, params,
+      base_url: Application.get_env(:lazyparrot, :telegram_bot)[:base_url] || "https://api.telegram.org"
+    )
+    |> log_errors(method, params)
   end
 
   def send_message(chat_id, text, opts \\ []) do
@@ -32,4 +38,24 @@ defmodule Lazyparrot.Telegram do
   defp token do
     Application.get_env(:lazyparrot, :telegram_bot)[:token]
   end
+
+  defp log_errors({:invalid_request, description}, method, params) do
+    Logger.error(
+      "Telegram API rejected #{method} (chat_id: #{inspect(params[:chat_id])}): #{description}"
+    )
+
+    {:error, description}
+  end
+
+  defp log_errors({:error, description}, method, params) do
+    Logger.error(
+      "Telegram API #{method} failed (chat_id: #{inspect(params[:chat_id])}): #{description}"
+    )
+
+    {:error, description}
+  end
+
+  # {:ok, result}, :ok, and {:blocked, description} pass through untouched;
+  # a blocked bot is routine user behavior, not an error worth alerting on.
+  defp log_errors(result, _method, _params), do: result
 end
