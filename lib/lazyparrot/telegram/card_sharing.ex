@@ -9,6 +9,7 @@ defmodule Lazyparrot.Telegram.CardSharing do
   use Gettext, backend: Lazyparrot.LlmGettext
 
   alias Lazyparrot.Cards
+  alias Lazyparrot.Cards.Card
   alias Lazyparrot.Telegram.Flows.CardCreation
   alias Lazyparrot.Users
 
@@ -31,7 +32,9 @@ defmodule Lazyparrot.Telegram.CardSharing do
     # line keeps the teaser from butting up against the link, and the call to
     # action points back up at it. Deliberately minimal: the full card follows
     # once the recipient claims it.
-    text = "\n#{card.front} — #{card.back}\n\n⬆️ " <> gettext("Follow the link to learn this")
+    front = CardCreation.side_label(card.front, card.front_image)
+    back = CardCreation.side_label(card.back, card.back_image)
+    text = "\n#{front} — #{back}\n\n⬆️ " <> gettext("Follow the link to learn this")
 
     share_url =
       "https://t.me/share/url?url=#{share_encode(deep_link(card))}&text=#{share_encode(text)}"
@@ -63,9 +66,10 @@ defmodule Lazyparrot.Telegram.CardSharing do
   # Credit the sharer only when the card actually enters the claimer's collection,
   # so double-clicks and self-claims don't inflate the count.
   defp find_or_copy(clicker, card) do
-    case Cards.get_by_front_back(clicker.id, card.front, card.back) do
+    # Telegram file_ids work in any chat with this bot, so images are shared by id
+    case Cards.get_by_sides(clicker.id, Card.sides(card)) do
       nil ->
-        {:ok, copy} = Cards.create(clicker, %{front: card.front, back: card.back})
+        {:ok, copy} = Cards.create(clicker, Card.sides(card))
         if card.user_id != clicker.id, do: Users.increment_share_claims_count(card.user_id)
         copy
 

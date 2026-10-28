@@ -27,4 +27,31 @@ defmodule Lazyparrot.CardsTest do
       assert Cards.next_due(user.id).id == reviewed.id
     end
   end
+
+  describe "image sides" do
+    setup do
+      %{user: Repo.insert!(%User{telegram_id: 4242})}
+    end
+
+    test "a side needs text or an image", %{user: user} do
+      assert {:error, changeset} = Cards.create(user, %{back: "cat"})
+      assert %{front: ["can't be blank"]} = errors_on(changeset)
+
+      assert {:ok, _card} = Cards.create(user, %{front_image: "photo_cat", back: "cat"})
+    end
+
+    test "get_by_sides/2 matches missing captions and images", %{user: user} do
+      {:ok, card} = Cards.create(user, %{front_image: "photo_cat", back: "cat"})
+
+      {:ok, _captioned} =
+        Cards.create(user, %{front: "Felis", front_image: "photo_cat", back: "cat"})
+
+      assert Cards.get_by_sides(user.id, %{
+               front: nil,
+               front_image: "photo_cat",
+               back: "cat",
+               back_image: nil
+             }).id == card.id
+    end
+  end
 end

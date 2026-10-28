@@ -13,11 +13,9 @@ defmodule Lazyparrot.Telegram.Bot do
 
   def handle_update(nil, _params), do: :ok
 
-  def handle_update(user, %{
-        "callback_query" => %{"data" => data, "message" => %{"message_id" => message_id}}
-      }) do
+  def handle_update(user, %{"callback_query" => %{"data" => data, "message" => message}}) do
     {method, payload} = parse_callback_data(data)
-    handle_callback(user, method, payload, message_id)
+    handle_callback(user, method, payload, message)
   end
 
   def handle_update(user, %{"message" => %{"text" => "/" <> command}}) do
@@ -25,7 +23,12 @@ defmodule Lazyparrot.Telegram.Bot do
   end
 
   def handle_update(user, %{"message" => %{"text" => text}}) do
-    handle_text(user, text)
+    handle_content(user, %{text: text, image: nil})
+  end
+
+  # Telegram sends a photo in several sizes, the largest one last.
+  def handle_update(user, %{"message" => %{"photo" => [_ | _] = sizes} = message}) do
+    handle_content(user, %{text: message["caption"], image: List.last(sizes)["file_id"]})
   end
 
   def handle_update(_user, _params), do: :ok
@@ -97,66 +100,68 @@ defmodule Lazyparrot.Telegram.Bot do
     )
   end
 
-  defp handle_text(user, text) do
+  # `content` is a message the user sent: text, or an image with an optional
+  # caption, as `%{text: text_or_caption, image: file_id_or_nil}`.
+  defp handle_content(user, content) do
     case user.current_flow do
       nil ->
-        CardCreation.start(user, text)
+        CardCreation.start(user, content)
 
       flow_module_string ->
         module = String.to_existing_atom(flow_module_string)
-        module.handle_message(user, text)
+        module.handle_message(user, content)
     end
   end
 
-  defp handle_callback(user, "show", payload, message_id) do
-    Reviews.show_answer(user, payload, message_id)
+  defp handle_callback(user, "show", payload, message) do
+    Reviews.show_answer(user, payload, message)
   end
 
-  defp handle_callback(user, "rate", payload, message_id) do
-    Reviews.handle_rating(user, payload["id"], payload["r"], message_id)
+  defp handle_callback(user, "rate", payload, message) do
+    Reviews.handle_rating(user, payload["id"], payload["r"], message)
   end
 
-  defp handle_callback(user, "del", payload, message_id) do
-    Reviews.handle_delete(user, payload["id"], payload["p"], message_id)
+  defp handle_callback(user, "del", payload, message) do
+    Reviews.handle_delete(user, payload["id"], payload["p"], message)
   end
 
-  defp handle_callback(user, "del_y", payload, message_id) do
-    Reviews.handle_delete_confirm(user, payload["id"], message_id)
+  defp handle_callback(user, "del_y", payload, message) do
+    Reviews.handle_delete_confirm(user, payload["id"], message)
   end
 
-  defp handle_callback(user, "del_n", payload, message_id) do
-    Reviews.handle_delete_cancel(user, payload["id"], payload["p"], message_id)
+  defp handle_callback(user, "del_n", payload, message) do
+    Reviews.handle_delete_cancel(user, payload["id"], payload["p"], message)
   end
 
-  defp handle_callback(user, "crev", card_id, message_id) do
-    CardCreation.handle_reverse(user, card_id, message_id)
+  defp handle_callback(user, "crev", card_id, message) do
+    CardCreation.handle_reverse(user, card_id, message["message_id"])
   end
 
-  defp handle_callback(user, "cdel", card_id, message_id) do
-    CardCreation.handle_delete(user, card_id, message_id)
+  defp handle_callback(user, "cdel", card_id, message) do
+    CardCreation.handle_delete(user, card_id, message["message_id"])
   end
 
-  defp handle_callback(user, "cdel_y", card_id, message_id) do
-    CardCreation.handle_delete_confirm(user, card_id, message_id)
+  defp handle_callback(user, "cdel_y", card_id, message) do
+    CardCreation.handle_delete_confirm(user, card_id, message["message_id"])
   end
 
-  defp handle_callback(user, "cdel_n", card_id, message_id) do
-    CardCreation.handle_delete_cancel(user, card_id, message_id)
+  defp handle_callback(user, "cdel_n", card_id, message) do
+    CardCreation.handle_delete_cancel(user, card_id, message["message_id"])
   end
 
-  defp handle_callback(user, "ccancel", _payload, message_id) do
-    CardCreation.handle_cancel(user, message_id)
+  defp handle_callback(user, "ccancel", _payload, message) do
+    CardCreation.handle_cancel(user, message["message_id"])
   end
 
-  defp handle_callback(user, "start_review", _payload, _message_id) do
+  defp handle_callback(user, "start_review", _payload, _message) do
     Reviews.start(user)
   end
 
-  defp handle_callback(user, "pause_reminders", _payload, _message_id) do
+  defp handle_callback(user, "pause_reminders", _payload, _message) do
     Reviews.pause_reminders(user)
   end
 
-  defp handle_callback(_user, _method, _payload, _message_id), do: :ok
+  defp handle_callback(_user, _method, _payload, _message), do: :ok
 
   defp parse_callback_data(data) do
     case String.split(data, ":", parts: 2) do

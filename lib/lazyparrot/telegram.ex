@@ -4,31 +4,42 @@ defmodule Lazyparrot.Telegram do
   def request(method, params) do
     token()
     |> Gramex.Api.request(method, params,
-      base_url: Application.get_env(:lazyparrot, :telegram_bot)[:base_url] || "https://api.telegram.org"
+      base_url:
+        Application.get_env(:lazyparrot, :telegram_bot)[:base_url] || "https://api.telegram.org"
     )
     |> log_errors(method, params)
   end
 
   def send_message(chat_id, text, opts \\ []) do
     params = %{chat_id: chat_id, text: text, parse_mode: "HTML"}
+    request("sendMessage", put_reply_markup(params, opts))
+  end
 
-    params =
-      if opts[:reply_markup],
-        do: Map.put(params, :reply_markup, opts[:reply_markup]),
-        else: params
-
-    request("sendMessage", params)
+  @doc """
+  Sends a photo by its Telegram `file_id`. Like message text, the caption is HTML.
+  """
+  def send_photo(chat_id, photo, caption, opts \\ []) do
+    params = %{chat_id: chat_id, photo: photo, caption: caption, parse_mode: "HTML"}
+    request("sendPhoto", put_reply_markup(params, opts))
   end
 
   def edit_message(chat_id, message_id, text, opts \\ []) do
     params = %{chat_id: chat_id, message_id: message_id, text: text, parse_mode: "HTML"}
+    request("editMessageText", put_reply_markup(params, opts))
+  end
 
-    params =
-      if opts[:reply_markup],
-        do: Map.put(params, :reply_markup, opts[:reply_markup]),
-        else: params
+  @doc """
+  Replaces the photo and caption of a photo message. Telegram can't edit a text
+  message into a photo message, so `message_id` must point at a photo message.
+  """
+  def edit_message_media(chat_id, message_id, photo, caption, opts \\ []) do
+    params = %{
+      chat_id: chat_id,
+      message_id: message_id,
+      media: %{type: "photo", media: photo, caption: caption, parse_mode: "HTML"}
+    }
 
-    request("editMessageText", params)
+    request("editMessageMedia", put_reply_markup(params, opts))
   end
 
   def delete_message(chat_id, message_id) do
@@ -44,6 +55,12 @@ defmodule Lazyparrot.Telegram do
     |> String.replace("&", "&amp;")
     |> String.replace("<", "&lt;")
     |> String.replace(">", "&gt;")
+  end
+
+  defp put_reply_markup(params, opts) do
+    if opts[:reply_markup],
+      do: Map.put(params, :reply_markup, opts[:reply_markup]),
+      else: params
   end
 
   defp token do

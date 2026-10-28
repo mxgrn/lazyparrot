@@ -2,12 +2,17 @@ defmodule Lazyparrot.Telegram.Flows.CardCreation do
   use Gettext, backend: Lazyparrot.LlmGettext
 
   alias Lazyparrot.Cards
+  alias Lazyparrot.Cards.Card
   alias Lazyparrot.Telegram
   alias Lazyparrot.Telegram.CardSharing
   alias Lazyparrot.Users
 
-  def start(user, front_text) do
-    Users.update_flow!(user, __MODULE__, %{"front" => front_text})
+  @doc """
+  Starts creating a card with `front` (see `Lazyparrot.Telegram.Bot` for its shape)
+  as the front side, and asks for the back side.
+  """
+  def start(user, front) do
+    Users.update_flow!(user, __MODULE__, %{"front" => front.text, "front_image" => front.image})
 
     Telegram.send_message(
       user.telegram_id,
@@ -33,9 +38,16 @@ defmodule Lazyparrot.Telegram.Flows.CardCreation do
     Telegram.edit_message(user.telegram_id, message_id, gettext("Card creation cancelled."))
   end
 
-  def handle_message(user, back_text) do
-    front = user.current_flow_args["front"]
-    {:ok, card} = Cards.create(user, %{front: front, back: back_text})
+  def handle_message(user, back) do
+    args = user.current_flow_args
+
+    {:ok, card} =
+      Cards.create(user, %{
+        front: args["front"],
+        front_image: args["front_image"],
+        back: back.text,
+        back_image: back.image
+      })
 
     Users.reset_flow!(user)
 
@@ -45,7 +57,7 @@ defmodule Lazyparrot.Telegram.Flows.CardCreation do
   def send_card_saved(user, card) do
     Telegram.send_message(
       user.telegram_id,
-      card_saved_text(card.front, card.back),
+      card_saved_text(card),
       reply_markup: card_saved_markup(card, user.id)
     )
   end
@@ -60,12 +72,12 @@ defmodule Lazyparrot.Telegram.Flows.CardCreation do
         )
 
       card ->
-        {:ok, reverse} = Cards.create(user, %{front: card.back, back: card.front})
+        {:ok, reverse} = Cards.create(user, Card.reverse_sides(card))
 
         Telegram.edit_message(
           user.telegram_id,
           message_id,
-          card_saved_text(reverse.front, reverse.back),
+          card_saved_text(reverse),
           reply_markup: card_saved_markup(reverse, user.id)
         )
     end
@@ -84,7 +96,7 @@ defmodule Lazyparrot.Telegram.Flows.CardCreation do
         Telegram.edit_message(
           user.telegram_id,
           message_id,
-          card_saved_text(card.front, card.back),
+          card_saved_text(card),
           reply_markup: %{
             inline_keyboard: [
               [
@@ -131,19 +143,29 @@ defmodule Lazyparrot.Telegram.Flows.CardCreation do
         Telegram.edit_message(
           user.telegram_id,
           message_id,
-          card_saved_text(card.front, card.back),
+          card_saved_text(card),
           reply_markup: card_saved_markup(card, user.id)
         )
     end
   end
 
-  defp card_saved_text(front, back) do
-    gettext("Card saved!") <> "\n\n<b>#{Telegram.escape(front)}</b>\n#{Telegram.escape(back)}"
+  @doc """
+  Plain-text label for a card side: its text, or a 🖼 marker (with the caption,
+  if any) for an image. Escape it before putting it into an HTML message.
+  """
+  def side_label(text, nil), do: text
+  def side_label(nil, _image), do: "🖼 " <> gettext("Image")
+  def side_label(caption, _image), do: "🖼 " <> caption
+
+  defp card_saved_text(card) do
+    front = Telegram.escape(side_label(card.front, card.front_image))
+    back = Telegram.escape(side_label(card.back, card.back_image))
+    gettext("Card saved!") <> "\n\n<b>#{front}</b>\n#{back}"
   end
 
   defp card_saved_markup(card, user_id) do
     reverse_row =
-      if Cards.reverse_exists?(user_id, card.front, card.back) do
+      if Cards.reverse_exists?(user_id, card) do
         []
       else
         [

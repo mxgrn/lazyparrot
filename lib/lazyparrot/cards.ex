@@ -102,11 +102,9 @@ defmodule Lazyparrot.Cards do
     |> Repo.one()
   end
 
-  def get_by_front_back(user_id, front, back) do
-    from(c in Card,
-      where: c.user_id == ^user_id and c.front == ^front and c.back == ^back,
-      limit: 1
-    )
+  def get_by_sides(user_id, sides) do
+    from(c in Card, where: c.user_id == ^user_id, limit: 1)
+    |> where_sides(sides)
     |> Repo.one()
   end
 
@@ -124,12 +122,24 @@ defmodule Lazyparrot.Cards do
     |> Repo.update!()
   end
 
-  def reverse_exists?(user_id, front, back) do
-    from(c in Card, where: c.user_id == ^user_id and c.front == ^back and c.back == ^front)
+  def reverse_exists?(user_id, %Card{} = card) do
+    from(c in Card, where: c.user_id == ^user_id)
+    |> where_sides(Card.reverse_sides(card))
     |> Repo.exists?()
   end
 
   def delete!(%Card{} = card) do
     Repo.delete!(card)
+  end
+
+  # Image-only sides have no text and text sides have no image, so match the
+  # missing values with IS NULL (Ecto refuses to compare with nil).
+  defp where_sides(query, sides) do
+    Enum.reduce([:front, :back, :front_image, :back_image], query, fn key, query ->
+      case Map.fetch!(sides, key) do
+        nil -> where(query, [c], is_nil(field(c, ^key)))
+        value -> where(query, [c], field(c, ^key) == ^value)
+      end
+    end)
   end
 end

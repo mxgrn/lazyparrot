@@ -58,6 +58,18 @@ defmodule Lazyparrot.Telegram.CardSharingTest do
       assert Repo.get!(User, sharer.id).share_claims_count == 0
     end
 
+    test "copies the image of an image card", %{sharer: sharer} do
+      {:ok, image_card} = Cards.create(sharer, %{front_image: "photo_cat", back: "cat"})
+
+      telegram_user(id: @clicker_telegram_id)
+      |> start_session()
+      |> send_message("/start learn_#{image_card.id}")
+      |> assert_text("<b>🖼 Image</b>\ncat")
+
+      clicker = Users.get_by_telegram_id!(@clicker_telegram_id)
+      assert Repo.get_by!(Card, user_id: clicker.id).front_image == "photo_cat"
+    end
+
     test "an unusable payload falls back to the welcome message" do
       telegram_user(id: @clicker_telegram_id)
       |> start_session()

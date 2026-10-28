@@ -4,8 +4,11 @@ defmodule Lazyparrot.Telegram.Reviews do
   alias Lazyparrot.Cards
   alias Lazyparrot.Telegram
   alias Lazyparrot.Telegram.CardSharing
+  alias Lazyparrot.Telegram.Flows.CardCreation
   alias Lazyparrot.Users
   alias Lazyparrot.Workers.ReviewReminder
+
+  @caption_limit 1024
 
   def start(user) do
     ReviewReminder.schedule_reminder(user.id)
@@ -31,24 +34,17 @@ defmodule Lazyparrot.Telegram.Reviews do
     end
   end
 
-  def show_answer(user, card_id, message_id, opts \\ []) do
+  # Callbacks pass the whole callback `message` (not just its id), so that
+  # `show/4` can tell a text message from a photo message.
+  def show_answer(user, card_id, message, opts \\ []) do
     confirm_delete = Keyword.get(opts, :confirm_delete, false)
 
     case Cards.get_for_user(card_id, user.id) do
       nil ->
-        Telegram.edit_message(
-          user.telegram_id,
-          message_id,
-          gettext("This card no longer exists.")
-        )
+        show(user, message, {:text, gettext("This card no longer exists.")})
 
       card ->
-        hint = "\n\n💁 " <> gettext("How easy was it to recall the answer?")
-
-        Telegram.edit_message(
-          user.telegram_id,
-          message_id,
-          "<b>#{Telegram.escape(card.front)}</b>\n\n#{Telegram.escape(card.back)}" <> hint,
+        show(user, message, answer_view(card),
           reply_markup: %{
             inline_keyboard: [
               [rating_button(card.id, "again", "👎 " <> pgettext("button", "Could not recall"))],
@@ -63,13 +59,13 @@ defmodule Lazyparrot.Telegram.Reviews do
     end
   end
 
-  def handle_rating(user, card_id, rating_string, message_id) do
+  def handle_rating(user, card_id, rating_string, message) do
     case Cards.get_for_user(card_id, user.id) do
       nil ->
-        Telegram.edit_message(
-          user.telegram_id,
-          message_id,
-          gettext("This card was not found, it might have been deleted.")
+        show(
+          user,
+          message,
+          {:text, gettext("This card was not found, it might have been deleted.")}
         )
 
       card ->
@@ -80,42 +76,34 @@ defmodule Lazyparrot.Telegram.Reviews do
 
         case Cards.next_due(user.id) do
           nil ->
-            Telegram.edit_message(
-              user.telegram_id,
-              message_id,
-              "✅ " <> gettext("All cards reviewed. Enjoy your break!")
-            )
+            show(user, message, {:text, "✅ " <> gettext("All cards reviewed. Enjoy your break!")})
 
           next_card ->
-            send_question_edit(user, next_card, message_id)
+            send_question_edit(user, next_card, message)
         end
     end
   end
 
-  def handle_delete(user, card_id, placement, message_id) do
+  def handle_delete(user, card_id, placement, message) do
     case Cards.get_for_user(card_id, user.id) do
       nil ->
-        Telegram.edit_message(
-          user.telegram_id,
-          message_id,
-          gettext("This card was already deleted."),
-          reply_markup: %{}
-        )
+        # editing without reply_markup also removes the buttons
+        show(user, message, {:text, gettext("This card was already deleted.")})
 
       _card ->
         case placement do
           "q" ->
-            send_question_edit(user, Cards.get_for_user(card_id, user.id), message_id,
+            send_question_edit(user, Cards.get_for_user(card_id, user.id), message,
               confirm_delete: true
             )
 
           "a" ->
-            show_answer(user, card_id, message_id, confirm_delete: true)
+            show_answer(user, card_id, message, confirm_delete: true)
         end
     end
   end
 
-  def handle_delete_confirm(user, card_id, message_id) do
+  def handle_delete_confirm(user, card_id, message) do
     case Cards.get_for_user(card_id, user.id) do
       nil ->
         :ok
@@ -125,49 +113,120 @@ defmodule Lazyparrot.Telegram.Reviews do
 
         case Cards.next_due(user.id) do
           nil ->
-            Telegram.edit_message(
-              user.telegram_id,
-              message_id,
-              "✅ " <> gettext("All cards reviewed. Enjoy your break!")
-            )
+            show(user, message, {:text, "✅ " <> gettext("All cards reviewed. Enjoy your break!")})
 
           next_card ->
-            send_question_edit(user, next_card, message_id)
+            send_question_edit(user, next_card, message)
         end
     end
   end
 
-  def handle_delete_cancel(user, card_id, placement, message_id) do
+  def handle_delete_cancel(user, card_id, placement, message) do
     case placement do
-      "q" -> send_question_edit(user, Cards.get_for_user(card_id, user.id), message_id)
-      "a" -> show_answer(user, card_id, message_id)
+      "q" -> send_question_edit(user, Cards.get_for_user(card_id, user.id), message)
+      "a" -> show_answer(user, card_id, message)
     end
   end
 
   defp send_question(user, card) do
     %{to_review: to_review, new: new} = Cards.count_due_by_type(user.id)
-
-    Telegram.send_message(
-      user.telegram_id,
-      question_text(card, to_review, new),
-      reply_markup: question_markup(card.id)
-    )
+    send_view(user, question_view(card, to_review, new), reply_markup: question_markup(card.id))
   end
 
-  defp send_question_edit(user, card, message_id, opts \\ []) do
+  defp send_question_edit(user, card, message, opts \\ []) do
     confirm_delete = Keyword.get(opts, :confirm_delete, false)
     %{to_review: to_review, new: new} = Cards.count_due_by_type(user.id)
 
-    Telegram.edit_message(
-      user.telegram_id,
-      message_id,
-      question_text(card, to_review, new),
+    show(user, message, question_view(card, to_review, new),
       reply_markup: question_markup(card.id, confirm_delete)
     )
   end
 
-  defp question_text(card, to_review, new) do
-    "<i>#{review_summary(to_review, new)}</i>\n\n<b>#{Telegram.escape(card.front)}</b>"
+  # A view is what a review message shows: `{:text, html}`, or
+  # `{:photo, file_id, caption_html}` when a card side is an image.
+  defp question_view(card, to_review, new) do
+    summary = "<i>#{review_summary(to_review, new)}</i>"
+
+    card_view(card.front_image, fn shown_image ->
+      [summary, bold(side_html(card.front, card.front_image, shown_image))]
+    end)
+  end
+
+  # Shows the back image if there is one; else the front image, for context.
+  defp answer_view(card) do
+    hint = "💁 " <> gettext("How easy was it to recall the answer?")
+
+    card_view(card.back_image || card.front_image, fn shown_image ->
+      [
+        bold(side_html(card.front, card.front_image, shown_image)),
+        side_html(card.back, card.back_image, shown_image),
+        hint
+      ]
+    end)
+  end
+
+  # `lines_fun` gets the image that is shown (or nil) and returns the lines of
+  # the message. Falls back to text (with 🖼 markers for the images) when the
+  # caption is longer than Telegram allows.
+  defp card_view(nil, lines_fun), do: {:text, join_lines(lines_fun.(nil))}
+
+  defp card_view(image, lines_fun) do
+    caption = join_lines(lines_fun.(image))
+
+    if caption_fits?(caption),
+      do: {:photo, image, caption},
+      else: card_view(nil, lines_fun)
+  end
+
+  # The side whose image is shown needs only its caption (if any) as text.
+  defp side_html(caption, image, image), do: caption && Telegram.escape(caption)
+
+  defp side_html(text, image, _shown_image),
+    do: Telegram.escape(CardCreation.side_label(text, image))
+
+  defp bold(nil), do: nil
+  defp bold(html), do: "<b>#{html}</b>"
+
+  defp join_lines(lines), do: lines |> Enum.reject(&is_nil/1) |> Enum.join("\n\n")
+
+  # Telegram counts caption length in UTF-16 code units, after it parses the HTML.
+  defp caption_fits?(caption_html) do
+    plain =
+      caption_html
+      |> String.replace(~r/<[^>]*>/, "")
+      |> String.replace(["&lt;", "&gt;", "&amp;"], fn
+        "&lt;" -> "<"
+        "&gt;" -> ">"
+        "&amp;" -> "&"
+      end)
+
+    byte_size(:unicode.characters_to_binary(plain, :utf8, :utf16)) <= 2 * @caption_limit
+  end
+
+  # Telegram can't edit a text message into a photo message (or back), so when
+  # the kind of message changes, delete it and send a new one.
+  defp show(user, message, view, opts \\ []) do
+    message_id = message["message_id"]
+
+    case {view, Map.has_key?(message, "text")} do
+      {{:text, text}, true} ->
+        Telegram.edit_message(user.telegram_id, message_id, text, opts)
+
+      {{:photo, image, caption}, false} ->
+        Telegram.edit_message_media(user.telegram_id, message_id, image, caption, opts)
+
+      _ ->
+        Telegram.delete_message(user.telegram_id, message_id)
+        send_view(user, view, opts)
+    end
+  end
+
+  defp send_view(user, {:text, text}, opts) do
+    Telegram.send_message(user.telegram_id, text, opts)
+  end
+
+  defp send_view(user, {:photo, image, caption}, opts) do
+    Telegram.send_photo(user.telegram_id, image, caption, opts)
   end
 
   defp review_summary(0, new) do

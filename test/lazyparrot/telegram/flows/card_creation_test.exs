@@ -29,4 +29,30 @@ defmodule Lazyparrot.Telegram.Flows.CardCreationTest do
     |> assert_text("<b>&lt;viel&gt; &amp; Spaß</b>")
     |> assert_text("a lot &gt; of fun")
   end
+
+  test "creating a card with a captioned image front and a text back" do
+    telegram_user(id: @telegram_id)
+    |> start_session()
+    |> send_photo("photo_cat", caption: "Felis catus")
+    |> assert_text("send me the back of the card")
+    |> send_message("cat")
+    |> assert_text("<b>🖼 Felis catus</b>\ncat")
+
+    user = Users.get_by_telegram_id!(@telegram_id)
+    card = Cards.next_due(user.id)
+    assert card.front_image == "photo_cat"
+    assert card.front == "Felis catus"
+    assert card.back_image == nil
+  end
+
+  test "an image without a caption can be the back of a card" do
+    telegram_user(id: @telegram_id)
+    |> start_session()
+    |> send_message("cat")
+    |> send_photo("photo_cat")
+    |> assert_text("<b>cat</b>\n🖼 Image")
+    |> click_button("Add reverse card")
+    |> assert_text("<b>🖼 Image</b>\ncat")
+    |> refute_has_button("Add reverse card")
+  end
 end
